@@ -1,21 +1,31 @@
 {
-  "name": "engineer-platform",
-  "private": true,
+  "name": "engineer-server",
   "version": "1.0.0",
-  "workspaces": [
-    "server",
-    "client"
-  ],
+  "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n API,WEB \"npm --workspace server run dev\" \"npm --workspace client run dev -- --host 0.0.0.0\"",
-    "start": "npm install && npm run db:up && npm run db:setup && npm run dev",
-    "db:generate": "npm --workspace server run db:generate",
-    "db:migrate": "npm --workspace server run db:migrate",
-    "db:seed": "npm --workspace server run db:seed",
-    "db:up": "docker compose up -d postgres",
-    "db:setup": "npm --workspace server run db:setup"
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev --name init",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:setup": "prisma generate && prisma migrate deploy && tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.10.2",
+    "prisma": "^6.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }
