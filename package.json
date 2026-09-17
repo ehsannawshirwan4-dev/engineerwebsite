@@ -1,0 +1,21 @@
+{
+  "name": "engineer-platform",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB \"npm --workspace server run dev\" \"npm --workspace client run dev -- --host 0.0.0.0\"",
+    "start": "npm install && npm run db:up && npm run db:setup && npm run dev",
+    "db:generate": "npm --workspace server run db:generate",
+    "db:migrate": "npm --workspace server run db:migrate",
+    "db:seed": "npm --workspace server run db:seed",
+    "db:up": "docker compose up -d postgres",
+    "db:setup": "npm --workspace server run db:setup"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
