@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Engineer Platform — My Profile</title>
+<style>
+body{font-family:Inter,Arial,sans-serif;margin:0;background:#f5f7fb;color:#172033}.wrap{max-width:1000px;margin:auto;padding:28px}.card{background:#fff;border:1px solid #e5e9f2;border-radius:16px;padding:22px;margin:16px 0;box-shadow:0 5px 18px #13203a0d}h1{margin:0 0 8px}.muted{color:#667085}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}label{font-weight:600;font-size:14px;display:block;margin-bottom:6px}input,textarea,select{width:100%;box-sizing:border-box;border:1px solid #d7dce6;border-radius:10px;padding:11px;font:inherit}textarea{min-height:100px;resize:vertical}.full{grid-column:1/-1}button{border:0;border-radius:10px;padding:11px 16px;background:#1769e0;color:white;font-weight:700;cursor:pointer}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.share{background:#eef5ff;padding:12px;border-radius:10px;word-break:break-all}.pill{display:inline-block;padding:5px 9px;background:#edf1f7;border-radius:999px;margin:3px;font-size:13px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body><main class="wrap">
+<div class="card"><h1>My Profile / CV</h1><p class="muted">Every Engineer Platform user can build a professional CV-style profile and share it publicly.</p>
+<div class="row"><button onclick="loadProfile()">Load my profile</button><button onclick="saveProfile()">Save profile</button></div></div>
+<form id="form" class="card grid" onsubmit="event.preventDefault();saveProfile()">
+<div><label>Full name</label><input id="name"></div><div><label>Professional title</label><input id="professionalTitle" placeholder="Civil Engineer / Student / Foreman..."></div>
+<div><label>Headline</label><input id="headline" placeholder="Short professional headline"></div><div><label>Location</label><input id="location" placeholder="City, Country"></div>
+<div><label>Phone</label><input id="phone"></div><div><label>Avatar URL</label><input id="avatarUrl"></div>
+<div class="full"><label>Professional summary</label><textarea id="summary"></textarea></div>
+<div><label>Skills (comma separated)</label><input id="skills" placeholder="AutoCAD, Revit, Surveying"></div><div><label>Languages (comma separated)</label><input id="languages" placeholder="Kurdish, Arabic, English"></div>
+<div><label>Interests (comma separated)</label><input id="interests"></div><div><label>Achievements (comma separated)</label><input id="achievements"></div>
+<div class="full"><label>Education (JSON)</label><textarea id="education" placeholder='[{"degree":"BSc","institution":"University","year":"2026"}]'></textarea></div>
+<div class="full"><label>Experience (JSON)</label><textarea id="experience" placeholder='[{"title":"Site Engineer","company":"Company","start":"2025","end":"2026","description":"Responsibilities..."}]'></textarea></div>
+<div><label>CV file URL</label><input id="cvUrl" placeholder="URL to your PDF CV"></div><div><label>Profile visibility</label><select id="visibility"><option value="PUBLIC">Public — shareable</option><option value="PRIVATE">Private</option></select></div>
+</form>
+<div class="card"><h2>Share your profile</h2><div id="share" class="share">Save your profile to get a shareable link.</div></div>
+<div class="card"><h2>Public CV preview</h2><div id="preview" class="muted">No profile loaded.</div></div>
+</main>
+<script>
+const API='http://localhost:4000/api'; const token=localStorage.getItem('engineer_token');
+const $=id=>document.getElementById(id); const arr=s=>s.split(',').map(x=>x.trim()).filter(Boolean); const parseJson=s=>{try{return s?JSON.parse(s):null}catch{return null}};
+async function loadProfile(){if(!token){alert('Please log in first and store your JWT as engineer_token.');return}const r=await fetch(API+'/profile/me',{headers:{Authorization:'Bearer '+token}});const d=await r.json();if(!r.ok){alert(d.error||'Could not load profile');return}const p=d.profile||{};['name','location','phone','avatarUrl'].forEach(k=>$(k).value=d[k]||'');['professionalTitle','headline','summary','cvUrl','visibility'].forEach(k=>$(k).value=p[k]||($(k).tagName==='SELECT'?'PUBLIC':''));['skills','languages','interests','achievements'].forEach(k=>$(k).value=(p[k]||[]).join(', '));$('education').value=p.education?JSON.stringify(p.education,null,2):'';$('experience').value=p.experience?JSON.stringify(p.experience,null,2):'';render(d)}
+async function saveProfile(){if(!token){alert('Please log in first.');return}const payload={name:$('name').value,location:$('location').value,phone:$('phone').value,avatarUrl:$('avatarUrl').value,professionalTitle:$('professionalTitle').value,headline:$('headline').value,summary:$('summary').value,skills:arr($('skills').value),languages:arr($('languages').value),interests:arr($('interests').value),achievements:arr($('achievements').value),education:parseJson($('education').value),experience:parseJson($('experience').value),cvUrl:$('cvUrl').value,visibility:$('visibility').value};const r=await fetch(API+'/profile/me',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(payload)});const d=await r.json();if(!r.ok){alert(d.error||'Could not save');return}const slug=d.slug;const url=location.origin+'/profile/'+slug;$('share').textContent=url;alert('Profile saved. Share link: '+url);loadProfile()}
+function render(d){const p=d.profile||{};$('share').innerHTML=p.visibility==='PUBLIC'&&p.slug?location.origin+'/profile/'+p.slug:'Your profile is private.';$('preview').innerHTML='<h3>'+esc(d.name||'')+'</h3><p><b>'+esc(p.professionalTitle||'')+'</b> · '+esc(p.headline||'')+'</p><p>'+esc(p.summary||d.bio||'')+'</p><p>'+((p.skills||[]).map(x=>'<span class="pill">'+esc(x)+'</span>').join(''))+'</p><p class="muted">'+esc(d.location||'')+'</p>'}
+function esc(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+</script></body></html>

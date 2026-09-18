@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role { ENGINEER STUDENT COMPANY PROJECT_OWNER SUPPLIER CRAFTSMAN FOREMAN LABORER JOB_SEEKER ADMIN }
+enum Availability { AVAILABLE BUSY OFFLINE }
+enum JobType { FULL_TIME PART_TIME INTERNSHIP FREELANCE }
+enum JobStatus { OPEN CLOSED }
+enum ProjectStatus { DRAFT OPEN IN_PROGRESS COMPLETED CANCELLED }
+enum ApplicationStatus { PENDING SHORTLISTED ACCEPTED REJECTED WITHDRAWN }
+enum ProfileVisibility { PUBLIC PRIVATE }
+
+model User {
+  id               String       @id @default(cuid())
+  email            String       @unique
+  passwordHash     String
+  name             String
+  role             Role
+  phone            String?
+  location         String?
+  bio              String?
+  avatarUrl        String?
+  availability     Availability @default(OFFLINE)
+  verified         Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  profile          PublicProfile?
+  engineer         EngineerProfile?
+  worker           WorkerProfile?
+  company         CompanyProfile?
+  student          StudentProfile?
+  jobs             Job[]        @relation("JobPoster")
+  projects         Project[]    @relation("ProjectOwner")
+  applications     Application[]
+  ratingsGiven     Rating[]     @relation("RatingAuthor")
+  ratingsReceived  Rating[]     @relation("RatingTarget")
+  materials        Material[]
+  sentMessages     Message[]    @relation("MessageSender")
+  receivedMessages Message[]    @relation("MessageReceiver")
+}
+
+model PublicProfile {
+  id             String            @id @default(cuid())
+  userId         String            @unique
+  slug           String            @unique
+  headline       String?
+  summary        String?
+  professionalTitle String?
+  education      Json?
+  experience     Json?
+  skills         String[]
+  languages      String[]
+  interests      String[]
+  achievements  String[]
+  cvUrl          String?
+  visibility     ProfileVisibility @default(PUBLIC)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EngineerProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  discipline String
+  university String?
+  experience Int @default(0)
+  skills String[]
+  certificates Certificate[]
+  projects PortfolioProject[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Certificate {
+  id String @id @default(cuid())
+  title String
+  issuer String?
+  fileUrl String?
+  verified Boolean @default(false)
+  engineerId String
+  engineer EngineerProfile @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+}
+model PortfolioProject {
+  id String @id @default(cuid())
+  title String
+  description String?
+  imageUrl String?
+  engineerId String
+  engineer EngineerProfile @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+}
+model WorkerProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  profession String
+  experience Int @default(0)
+  skills String[]
+  workPhotos String[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model CompanyProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  industry String
+  description String?
+  website String?
+  logoUrl String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model StudentProfile {
+  id String @id @default(cuid())
+  userId String @unique
+  university String?
+  discipline String?
+  skills String[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Job {
+  id String @id @default(cuid())
+  title String
+  description String
+  field String
+  location String
+  type JobType
+  experience String?
+  salary String?
+  deadline DateTime?
+  status JobStatus @default(OPEN)
+  posterId String
+  poster User @relation("JobPoster", fields: [posterId], references: [id])
+  applications Application[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Application {
+  id String @id @default(cuid())
+  jobId String
+  applicantId String
+  message String?
+  status ApplicationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicant User @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  @@unique([jobId, applicantId])
+}
+model Project {
+  id String @id @default(cuid())
+  title String
+  description String
+  type String
+  location String
+  budget String?
+  timeline String?
+  required String[]
+  status ProjectStatus @default(OPEN)
+  ownerId String
+  owner User @relation("ProjectOwner", fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Material {
+  id String @id @default(cuid())
+  name String
+  category String
+  description String?
+  price String?
+  offer String?
+  supplierId String
+  supplier User @relation(fields: [supplierId], references: [id])
+  createdAt DateTime @default(now())
+}
+model Rating {
+  id String @id @default(cuid())
+  authorId String
+  targetId String
+  score Int
+  review String?
+  createdAt DateTime @default(now())
+  author User @relation("RatingAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  target User @relation("RatingTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  @@unique([authorId, targetId])
+}
+model Message {
+  id String @id @default(cuid())
+  senderId String
+  receiverId String
+  body String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  sender User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+}
